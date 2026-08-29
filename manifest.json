@@ -2,13 +2,13 @@
   "name": "Divya's Growth Mentor",
   "short_name": "GrowthMentor",
   "description": "Personal PM mentor, 4-month growth plan, metrics lab, and practice arena for Divya Ramaraj",
-  "start_url": "/index.html",
+  "start_url": "/Project-Manager-Mentor/index.html",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#1B4F8A",
   "theme_color": "#1B4F8A",
   "lang": "en",
-  "scope": "/",
+  "scope": "/Project-Manager-Mentor/",
   "categories": ["education", "productivity"],
   "icons": [
     {
@@ -39,28 +39,28 @@
       "name": "Mentor Chat",
       "short_name": "Chat",
       "description": "Talk to your mentor",
-      "url": "/index.html#chat",
+      "url": "/Project-Manager-Mentor/index.html#chat",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Practice Arena",
       "short_name": "Practice",
       "description": "PM interview practice",
-      "url": "/index.html#arena",
+      "url": "/Project-Manager-Mentor/index.html#arena",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Metrics Lab",
       "short_name": "Metrics",
       "description": "Metrics exercises",
-      "url": "/index.html#metrics",
+      "url": "/Project-Manager-Mentor/index.html#metrics",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Certifications",
       "short_name": "Certs",
       "description": "AI & Data PM certification roadmap",
-      "url": "/index.html#certs",
+      "url": "/Project-Manager-Mentor/index.html#certs",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     }
   ]
