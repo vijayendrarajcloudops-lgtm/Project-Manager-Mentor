@@ -1575,6 +1575,7 @@ async function callGemini({ system, messages }) {
   if(!response.ok) throw new Error(`Gemini error: ${response.status}`);
   const data=await response.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text || "No response received.";
+}
 
 async function sendChat(){
   const input=document.getElementById('chat-in');
@@ -1597,6 +1598,555 @@ async function sendChat(){
 function sendQuickPrompt(i){ document.getElementById('chat-in').value=QUICK_PROMPTS[i]; sendChat(); }
 function handleChatKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendChat(); } }
 function autoResize(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
+
+// ═══════════════════════════ QUICK PROMPTS (chat page chips) ═══════════════════════════
+const QUICK_PROMPTS = [
+  "What should I focus on this week?",
+  "Help me sharpen my Ford AI cost governance story for interviews",
+  "Give me a mock interview question right now",
+  "How do I talk about my CDP work more strategically?",
+];
+
+// ═══════════════════════════ SHARED HELPERS ═══════════════════════════
+function mdToHtml(text){
+  if(!text) return '';
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const bold = s => esc(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  return text.trim().split(/\n\s*\n/).map(block=>{
+    const lines = block.split('\n').map(l=>l.trim()).filter(Boolean);
+    if(lines.length && lines.every(l=>l.startsWith('- '))){
+      return '<ul>' + lines.map(l=>`<li>${bold(l.slice(2))}</li>`).join('') + '</ul>';
+    }
+    return `<p>${lines.map(bold).join('<br>')}</p>`;
+  }).join('');
+}
+function todaysReminder(){
+  const dayIndex = Math.floor(Date.now()/86400000);
+  return REMINDERS[dayIndex % REMINDERS.length];
+}
+function getCurrentFocusMonth(){
+  for(const m of PLAN){
+    const tasks = m.weeks.flatMap(w=>w.tasks);
+    if(tasks.some(t=>!state.done[t.id])) return m.month;
+  }
+  return PLAN[PLAN.length-1].month;
+}
+function taskRowHtml(t){
+  return `<div class="task-row ${state.done[t.id]?'done':''}" onclick="toggleTask('${t.id}')">
+    <div class="task-chk">${state.done[t.id]?'✓':''}</div>
+    <div class="task-txt">${t.text}</div>
+    <span class="task-tag tt-${t.tag}">${t.tag}</span>
+  </div>`;
+}
+function toggleTask(id){
+  state.done[id] = !state.done[id];
+  saveState();
+  renderHome();
+  renderPlan();
+}
+function catLabel(cat){
+  const a = ARTICLES.find(x=>x.cat===cat);
+  return a ? a.tag : cat[0].toUpperCase()+cat.slice(1);
+}
+
+// ═══════════════════════════ NAV / PAGE ROUTING ═══════════════════════════
+function buildNav(){
+  document.getElementById('bot-nav').innerHTML = PAGES.map(p=>
+    `<button class="bn-item" id="bn-${p.id}" onclick="showPage('${p.id}')"><span class="bn-icon">${p.icon}</span><span>${p.label}</span></button>`
+  ).join('');
+  document.getElementById('top-nav').innerHTML = PAGES.map(p=>
+    `<button class="tn-tab" id="tn-${p.id}" onclick="showPage('${p.id}')">${p.label}</button>`
+  ).join('');
+}
+const PAGE_RENDERERS = {
+  home:()=>renderHome(), plan:()=>renderPlan(), learn:()=>renderLearn(),
+  skills:()=>renderSkills(), aipath:()=>renderAIPath(), certs:()=>renderCerts(),
+  metrics:()=>renderMetrics(), voice:()=>renderVoice(), retro:()=>renderRetro(),
+  chat:()=>renderChat(),
+};
+function showPage(id){
+  document.querySelectorAll('.page, .chat-page').forEach(el=>el.classList.remove('active'));
+  const target = document.getElementById('page-'+id);
+  if(target) target.classList.add('active');
+  document.querySelectorAll('.bn-item').forEach(el=>el.classList.toggle('active', el.id==='bn-'+id));
+  document.querySelectorAll('.tn-tab').forEach(el=>el.classList.toggle('active', el.id==='tn-'+id));
+  if(PAGE_RENDERERS[id]) PAGE_RENDERERS[id]();
+  const main = document.getElementById('main-area');
+  if(main) main.scrollTop = 0;
+}
+
+// ═══════════════════════════ HOME ═══════════════════════════
+function renderHome(){
+  const doneCount = Object.values(state.done).filter(Boolean).length;
+  const masteredSkills = SKILL_DOMAINS.flatMap(d=>d.concepts).filter(c=>state.skillStatus[c.id]==='know').length;
+  const aiDone = Object.values(state.aiModules).filter(Boolean).length;
+  document.getElementById('s-done').textContent = doneCount;
+  document.getElementById('s-skills').textContent = masteredSkills;
+  document.getElementById('s-ai').textContent = aiDone;
+  document.getElementById('s-streak').textContent = state.streak||1;
+
+  document.getElementById('home-pillars').innerHTML = PILLARS.map(p=>{
+    const done = p.ids.filter(id=>state.done[id]).length;
+    const pct = Math.round(done/p.ids.length*100);
+    return `<div class="pillar-row"><div class="pillar-n">${p.name}</div><div class="p-track"><div class="p-fill" style="width:${pct}%;background:${p.color}"></div></div><div class="p-pct">${pct}%</div></div>`;
+  }).join('');
+
+  const focusMonth = getCurrentFocusMonth();
+  const m = PLAN.find(x=>x.month===focusMonth);
+  const focusWeek = m.weeks.find(w=>w.tasks.some(t=>!state.done[t.id])) || m.weeks[m.weeks.length-1];
+  document.getElementById('home-focus-label').textContent = `${m.theme} · ${focusWeek.label}`;
+  document.getElementById('home-focus').innerHTML = focusWeek.tasks.map(taskRowHtml).join('');
+
+  document.getElementById('home-reminder').textContent = todaysReminder();
+}
+
+// ═══════════════════════════ PLAN ═══════════════════════════
+function setActiveMonth(m){ state.activeMonth=m; saveState(); renderPlan(); }
+function renderPlan(){
+  document.getElementById('plan-tabs').innerHTML = PLAN.map(m=>
+    `<button class="pm-tab ${m.month===state.activeMonth?'active':''}" ${m.month===state.activeMonth?`style="background:${m.color}"`:''} onclick="setActiveMonth(${m.month})">Month ${m.month}</button>`
+  ).join('');
+  const m = PLAN.find(x=>x.month===state.activeMonth) || PLAN[0];
+  const tasks = m.weeks.flatMap(w=>w.tasks);
+  const doneCount = tasks.filter(t=>state.done[t.id]).length;
+  const pct = tasks.length ? Math.round(doneCount/tasks.length*100) : 0;
+  document.getElementById('plan-content').innerHTML = `
+    <div class="month-header-card" style="background:${m.color}">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="mh-num" style="background:rgba(255,255,255,.25)">${m.month}</div>
+        <div><div class="mh-title" style="color:#fff">${m.theme}</div><div class="mh-sub" style="color:#fff">${m.subtitle}</div></div>
+      </div>
+      <div class="mh-prog"><div class="mh-prog-fill" style="width:${pct}%"></div></div>
+    </div>
+    ${m.weeks.map(w=>`
+      <div class="week-section">
+        <div class="week-label">${w.label} <span style="font-weight:400">· ${w.week}</span></div>
+        ${w.tasks.map(taskRowHtml).join('')}
+      </div>`).join('')}
+  `;
+}
+
+// ═══════════════════════════ LEARN ═══════════════════════════
+let learnFilter = 'all';
+function setLearnFilter(f){ learnFilter=f; renderLearn(); }
+function toggleArticle(id){
+  const el = document.getElementById('ad-'+id);
+  const btn = document.getElementById('arm-'+id);
+  const open = el.classList.toggle('open');
+  btn.textContent = open ? 'Show less ↑' : 'Read full breakdown →';
+}
+function renderLearn(){
+  const cats = ['all', ...new Set(ARTICLES.map(a=>a.cat))];
+  document.getElementById('learn-filters').innerHTML = cats.map(f=>
+    `<button class="f-btn ${f===learnFilter?'active':''}" onclick="setLearnFilter('${f}')">${f==='all'?'All':catLabel(f)}</button>`
+  ).join('');
+  const list = ARTICLES.filter(a=>learnFilter==='all'||a.cat===learnFilter);
+  document.getElementById('learn-articles').innerHTML = list.map(a=>`
+    <div class="article-card">
+      <span class="a-tag at-${a.cat}">${a.tag}</span>
+      <div class="a-title">${a.title}</div>
+      <div class="a-meta">${a.meta}</div>
+      <div class="a-summary">${a.summary}</div>
+      <div class="a-takeaway">💡 ${a.takeaway}</div>
+      <div class="a-read-more" id="arm-${a.id}" onclick="toggleArticle('${a.id}')">Read full breakdown →</div>
+      <div class="a-detail" id="ad-${a.id}">${a.detail}</div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════ TOPIC OVERLAY (skills + AI modules) ═══════════════════════════
+let currentTopic = null;
+function findTopic(type,id){
+  if(type==='skill'){
+    for(const d of SKILL_DOMAINS){ const c=d.concepts.find(x=>x.id===id); if(c) return Object.assign({domain:d}, c); }
+  } else if(type==='ai'){
+    for(const t of AI_TRACKS){ const mod=t.modules.find(x=>x.id===id); if(mod) return Object.assign({track:t}, mod); }
+  }
+  return null;
+}
+function openTopic(type,id){
+  const topic = findTopic(type,id);
+  if(!topic) return;
+  currentTopic = {type, id, key:`${type}:${id}`};
+  document.getElementById('to-type').textContent = type==='skill' ? 'Data PM Skill' : 'AI Upskill Module';
+  document.getElementById('to-title').textContent = topic.title;
+  const badgeEl = document.getElementById('to-badge');
+  badgeEl.textContent = type==='skill' ? (topic.domain?topic.domain.badge:'') : (topic.track?topic.track.title:'');
+  badgeEl.style.background='rgba(255,255,255,.18)'; badgeEl.style.color='#fff';
+  let linksHtml='';
+  if(topic.links && topic.links.length){
+    linksHtml = `<div class="to-links"><div class="to-links-label">Go deeper</div>${topic.links.map(l=>`<a class="to-link" href="${l.url}" target="_blank" rel="noopener">${l.name} ↗</a>`).join('')}</div>`;
+  }
+  document.getElementById('to-article').innerHTML = mdToHtml(topic.article) + linksHtml;
+  renderTopicChat();
+  document.getElementById('topic-overlay').classList.add('open');
+}
+function closeTopic(){ document.getElementById('topic-overlay').classList.remove('open'); currentTopic=null; }
+function renderTopicChat(){
+  const hist = state.articleCache[currentTopic.key] || [];
+  const el = document.getElementById('to-chat-msgs');
+  el.innerHTML = hist.length
+    ? hist.map(m=>`<div class="msg ${m.role==='user'?'user':'assistant'}"><div class="msg-av">${m.role==='user'?'DR':'🤖'}</div><div class="msg-bub">${mdToHtml(m.content)}</div></div>`).join('')
+    : '<div class="to-empty-hint">Ask a follow-up question about this topic.</div>';
+}
+function handleTopicChatKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendTopicChat(); } }
+async function sendTopicChat(){
+  const input = document.getElementById('to-chat-in');
+  const text = input.value.trim();
+  if(!text || !currentTopic) return;
+  input.value=''; input.style.height='auto';
+  const key = currentTopic.key;
+  if(!state.articleCache[key]) state.articleCache[key]=[];
+  state.articleCache[key].push({role:'user',content:text});
+  renderTopicChat();
+  const topic = findTopic(currentTopic.type, currentTopic.id);
+  const sys = `You are Divya's growth mentor. She is asking a follow-up question about this specific topic: "${topic.title}". Background on the topic: ${topic.article}\n\nAnswer specifically and concisely, connecting back to her Ford CDP / AI PM context where relevant.`;
+  try{
+    const reply = await callGemini({system:sys, messages: state.articleCache[key].slice(-8)});
+    state.articleCache[key].push({role:'assistant',content:reply});
+    saveState();
+    renderTopicChat();
+  }catch(e){
+    state.articleCache[key].push({role:'assistant',content:`Connection issue — ${e.message||'try again'}.`});
+    renderTopicChat();
+  }
+}
+
+// ═══════════════════════════ DATA PM SKILLS MAP ═══════════════════════════
+let openDomain = null;
+function toggleDomain(id){ openDomain = openDomain===id ? null : id; renderSkills(); }
+function setSkillStatus(id, status){
+  state.skillStatus[id] = state.skillStatus[id]===status ? undefined : status;
+  saveState(); renderSkills(); renderHome();
+}
+function updateSkillCounters(){
+  const all = SKILL_DOMAINS.flatMap(d=>d.concepts);
+  const mastered = all.filter(c=>state.skillStatus[c.id]==='know').length;
+  const learning = all.filter(c=>state.skillStatus[c.id]==='learning').length;
+  document.getElementById('sk-mastered').textContent = `● ${mastered} Mastered`;
+  document.getElementById('sk-learning').textContent = `● ${learning} Learning`;
+  document.getElementById('sk-todo').textContent = `● ${all.length-mastered-learning} To Learn`;
+}
+function renderSkills(){
+  document.getElementById('skills-content').innerHTML = SKILL_DOMAINS.map(d=>{
+    const open = openDomain===d.id;
+    return `
+    <div class="skill-domain">
+      <div class="sd-header ${open?'open':''}" onclick="toggleDomain('${d.id}')">
+        <div class="sd-icon">${d.icon}</div>
+        <div class="sd-info"><div class="sd-title">${d.title}</div><div class="sd-sub">${d.sub}</div></div>
+        <span class="chip" style="background:${d.badgeColor};color:#fff">${d.badge}</span>
+      </div>
+      <div class="sd-body ${open?'open':''}">
+        <div class="concept-list">
+          ${d.concepts.map(c=>{
+            const st = state.skillStatus[c.id];
+            return `<div class="concept-row ${st||''}" onclick="openTopic('skill','${c.id}')">
+              <div class="cr-info">
+                <div class="cr-title">${c.title}</div>
+                <div class="cr-desc">${c.desc}</div>
+                <div class="cr-why">${c.why}</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
+                <button class="cr-btn ${st==='learning'?'learning':''}" onclick="event.stopPropagation();setSkillStatus('${c.id}','learning')">Learning</button>
+                <button class="cr-btn ${st==='know'?'know':''}" onclick="event.stopPropagation();setSkillStatus('${c.id}','know')">Know it</button>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+        <div class="res-list">
+          ${d.resources.map(r=>`<div class="res-row"><span class="res-badge rb-${r.type}">${r.type}</span><div><div class="res-name">${r.name}</div><div class="res-desc">${r.desc}</div></div></div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  updateSkillCounters();
+}
+
+// ═══════════════════════════ AI UPSKILL PATH ═══════════════════════════
+let openTrack = null;
+function toggleTrack(num){ openTrack = openTrack===num ? null : num; renderAIPath(); }
+function toggleAIModule(id){ state.aiModules[id] = !state.aiModules[id]; saveState(); renderAIPath(); renderHome(); }
+function renderAIPath(){
+  document.getElementById('ai-tracks-content').innerHTML = AI_TRACKS.map(t=>{
+    const open = openTrack===t.num;
+    const doneCount = t.modules.filter(m=>state.aiModules[m.id]).length;
+    return `<div class="ai-track-card">
+      <div class="atc-header ${open?'open':''}" onclick="toggleTrack(${t.num})">
+        <div class="atc-num">${t.num}</div>
+        <div class="atc-info"><div class="atc-title">${t.title}</div><div class="atc-sub">${t.sub} · ${t.weeks}</div></div>
+        <div class="atc-prog">${doneCount}/${t.modules.length}</div>
+      </div>
+      <div class="atc-body ${open?'open':''}">
+        ${t.modules.map(m=>`
+          <div class="ai-module ${state.aiModules[m.id]?'done':''}">
+            <div class="am-header">
+              <div class="am-title" style="cursor:pointer" onclick="openTopic('ai','${m.id}')">${m.title}</div>
+              <button class="am-btn ${state.aiModules[m.id]?'done':''}" onclick="toggleAIModule('${m.id}')">${state.aiModules[m.id]?'Done ✓':'Mark done'}</button>
+            </div>
+            <div class="am-desc">${m.desc}</div>
+            <div class="am-tags">${m.tags.map(tg=>`<span class="am-tag">${tg}</span>`).join('')}</div>
+          </div>`).join('')}
+        <div class="checkpoint-box"><strong>Checkpoint:</strong> ${t.checkpoint}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════ CERTIFICATIONS ═══════════════════════════
+let certFilter = 'all';
+function setCertFilter(f){ certFilter=f; renderCerts(); }
+function toggleCertSaved(id){ state.certSaved[id]=!state.certSaved[id]; saveState(); renderCerts(); }
+function renderCerts(){
+  const filters = ['all','Free','Paid','High'];
+  document.getElementById('cert-filters').innerHTML = filters.map(f=>
+    `<button class="f-btn ${f===certFilter?'active':''}" onclick="setCertFilter('${f}')">${f==='High'?'Top Priority':f}</button>`
+  ).join('');
+  let list = CERTS;
+  if(certFilter==='Free'||certFilter==='Paid') list = CERTS.filter(c=>c.cost===certFilter);
+  if(certFilter==='High') list = CERTS.filter(c=>c.priority==='High');
+  document.getElementById('certs-content').innerHTML = list.map(c=>`
+    <div class="cert-card">
+      <div class="cert-header">
+        <div class="cert-logo" style="background:var(--blue-l)">${c.logo}</div>
+        <div><div class="cert-name">${c.name}</div><div class="cert-by">${c.by}</div></div>
+      </div>
+      <div class="cert-tags">${c.tags.map((tg,i)=>`<span class="chip ${(c.tagColors&&c.tagColors[i])||'chip-gray'}">${tg}</span>`).join('')}</div>
+      <div class="cert-desc">${c.desc}</div>
+      <div class="cert-details">
+        <span class="cert-detail">💰 ${c.price}</span>
+        <span class="cert-detail">⏱️ ${c.duration}</span>
+        <span class="cert-detail">📋 ${c.format}</span>
+        <span class="cert-detail">📶 ${c.level}</span>
+      </div>
+      <div class="cert-why">💡 ${c.why}</div>
+      <div class="cert-actions">
+        <a class="cert-link" href="${c.url}" target="_blank" rel="noopener">View course →</a>
+        <button class="cert-save-btn ${state.certSaved[c.id]?'saved':''}" onclick="toggleCertSaved('${c.id}')">${state.certSaved[c.id]?'★ Saved':'☆ Save'}</button>
+      </div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════ METRICS LAB ═══════════════════════════
+let metricsFilter = 'all';
+let openEx = null;
+function setMetricsFilter(c){ metricsFilter=c; renderMetrics(); }
+function toggleEx(id){ openEx = openEx===id ? null : id; renderMetrics(); }
+function renderMetrics(){
+  const cats = ['all', ...new Set(METRICS_EX.map(e=>e.cat))];
+  document.getElementById('metrics-filters').innerHTML = cats.map(c=>
+    `<button class="f-btn ${c===metricsFilter?'active':''}" onclick="setMetricsFilter('${c}')">${c==='all'?'All':c[0].toUpperCase()+c.slice(1)}</button>`
+  ).join('');
+  const list = METRICS_EX.filter(e=>metricsFilter==='all'||e.cat===metricsFilter);
+  document.getElementById('metrics-content').innerHTML = list.map(e=>{
+    const open = openEx===e.id;
+    return `<div class="ex-card">
+      <div class="ex-hdr ${open?'open':''}" onclick="toggleEx('${e.id}')">
+        <div><div class="ex-htitle">${e.title}</div><div class="ex-hmeta">${e.level}${state.exercisesDone[e.id]?' · ✓ Completed':''}</div></div>
+        <span class="chip chip-${e.badge}">${e.cat}</span>
+      </div>
+      <div class="ex-body ${open?'open':''}">
+        <div class="ex-scenario">${e.scenario}</div>
+        <div class="ex-q">${e.question}</div>
+        <textarea class="ex-ta" id="ex-ta-${e.id}" placeholder="Structure your answer..."></textarea>
+        <div class="ex-hint" onclick="this.textContent='💡 '+this.dataset.hint" data-hint="${e.hint.replace(/"/g,'&quot;')}">💡 Tap for a hint</div>
+        <button class="btn btn-primary" style="margin-top:10px;width:100%" onclick="submitMetricsEx('${e.id}')">Get Feedback</button>
+        <div class="ex-fb" id="ex-fb-${e.id}"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function submitMetricsEx(id){
+  const ex = METRICS_EX.find(e=>e.id===id);
+  const ta = document.getElementById('ex-ta-'+id);
+  const answer = ta.value.trim();
+  if(!answer) return;
+  const fb = document.getElementById('ex-fb-'+id);
+  fb.classList.add('open'); fb.innerHTML = '<em>Thinking…</em>';
+  try{
+    const reply = await callGemini({system:METRICS_SYSTEM, messages:[{role:'user',content:`Scenario: ${ex.scenario}\nQuestion: ${ex.question}\n\nMy answer:\n${answer}`}]});
+    fb.innerHTML = mdToHtml(reply);
+    state.exercisesDone[id]=true; saveState(); renderMetrics();
+  }catch(err){ fb.innerHTML = `Connection issue — ${err.message||'try again'}.`; }
+}
+
+// ═══════════════════════════ PRACTICE ARENA ═══════════════════════════
+const ARENA_META = {
+  design:{icon:'🎨',title:'Product Design',desc:'Design a product or feature from scratch'},
+  improve:{icon:'🔧',title:'Improve a Product',desc:'Find and fix gaps in an existing product'},
+  rootcause:{icon:'🔍',title:'Root Cause Analysis',desc:'Diagnose why a metric moved'},
+  strategy:{icon:'🧭',title:'Strategy & Prioritisation',desc:'Make resourcing and roadmap trade-offs'},
+  behavioral:{icon:'🗣️',title:'Behavioural',desc:'Tell a structured story from experience'},
+  estimation:{icon:'🧮',title:'Estimation',desc:'Structure a Fermi-style estimate'},
+};
+let arenaState = { cat:null, qIndex:0 };
+function buildArenaGrid(){
+  document.getElementById('arena-grid').innerHTML = Object.keys(ARENA_PROMPTS).map(cat=>{
+    const m = ARENA_META[cat] || {icon:'🎯',title:cat,desc:''};
+    return `<div class="arena-card" onclick="openArena('${cat}')">
+      <div class="ac-icon">${m.icon}</div>
+      <div class="ac-text"><div class="ac-title">${m.title}</div><div class="ac-desc">${m.desc}</div></div>
+    </div>`;
+  }).join('');
+}
+function openArena(cat){
+  arenaState.cat = cat;
+  arenaState.qIndex = Math.floor(Math.random()*ARENA_PROMPTS[cat].length);
+  document.getElementById('arena-home-view').style.display='none';
+  document.getElementById('arena-session').classList.add('open');
+  document.getElementById('session-title').textContent = (ARENA_META[cat]||{}).title || cat;
+  loadArenaQ();
+}
+function loadArenaQ(){
+  const q = ARENA_PROMPTS[arenaState.cat][arenaState.qIndex];
+  document.getElementById('session-prompt').textContent = q.q;
+  document.getElementById('session-ta').value='';
+  const fb = document.getElementById('session-fb'); fb.classList.remove('open'); fb.innerHTML='';
+}
+function newArenaQ(){
+  const arr = ARENA_PROMPTS[arenaState.cat];
+  let next = Math.floor(Math.random()*arr.length);
+  if(arr.length>1){ while(next===arenaState.qIndex) next = Math.floor(Math.random()*arr.length); }
+  arenaState.qIndex = next;
+  loadArenaQ();
+}
+function closeArena(){
+  document.getElementById('arena-home-view').style.display='';
+  document.getElementById('arena-session').classList.remove('open');
+}
+async function submitArena(){
+  const ta = document.getElementById('session-ta');
+  const answer = ta.value.trim();
+  if(!answer) return;
+  const btn = document.getElementById('session-sub'); btn.disabled=true;
+  const q = ARENA_PROMPTS[arenaState.cat][arenaState.qIndex];
+  const fb = document.getElementById('session-fb');
+  fb.classList.add('open'); fb.innerHTML = '<em>Reviewing your answer…</em>';
+  try{
+    const reply = await callGemini({system:ARENA_SYSTEM, messages:[{role:'user',content:`Prompt: ${q.q}\n\nMy answer:\n${answer}`}]});
+    fb.innerHTML = mdToHtml(reply);
+  }catch(err){ fb.innerHTML = `Connection issue — ${err.message||'try again'}.`; }
+  btn.disabled=false;
+}
+
+// ═══════════════════════════ VOICE LOG ═══════════════════════════
+function addVoiceEntry(){
+  state.voiceEntries.push({id:'v'+Date.now(), date:new Date().toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}), spoke:null, note:''});
+  saveState(); renderVoice();
+}
+function setVoiceSpoke(id, val){
+  const v = state.voiceEntries.find(x=>x.id===id); if(!v) return;
+  v.spoke = v.spoke===val ? null : val;
+  saveState(); renderVoice();
+}
+function updateVoiceNote(id, val){
+  const v = state.voiceEntries.find(x=>x.id===id); if(!v) return;
+  v.note = val; saveState();
+}
+function renderVoice(){
+  const el = document.getElementById('voice-entries');
+  el.innerHTML = state.voiceEntries.length ? state.voiceEntries.slice().reverse().map(v=>`
+    <div class="voice-entry">
+      <div class="ve-top">
+        <span class="ve-date">${v.date}</span>
+        <div class="ve-btns">
+          <button class="ve-btn yes ${v.spoke===true?'on':''}" onclick="setVoiceSpoke('${v.id}',true)">Spoke</button>
+          <button class="ve-btn no ${v.spoke===false?'on':''}" onclick="setVoiceSpoke('${v.id}',false)">Stayed quiet</button>
+        </div>
+      </div>
+      <textarea class="ve-input" rows="2" placeholder="What did you say — or what could you have said?" oninput="updateVoiceNote('${v.id}',this.value)">${v.note||''}</textarea>
+    </div>`).join('') : '<div style="font-size:12px;color:var(--gray);text-align:center;padding:10px 0">No entries yet — log your first meeting below.</div>';
+  const spoke = state.voiceEntries.filter(v=>v.spoke===true).length;
+  const total = state.voiceEntries.length;
+  document.getElementById('voice-stats').innerHTML = total
+    ? `<div style="font-size:12px;color:var(--gray)">You spoke up in <strong style="color:var(--blue)">${spoke}/${total}</strong> logged meetings (${Math.round(spoke/total*100)}%).</div>`
+    : `<div style="font-size:12px;color:var(--gray)">Log a few meetings to see your pattern here.</div>`;
+}
+
+// ═══════════════════════════ WEEKLY RETRO ═══════════════════════════
+function saveRetro(){
+  const wins = document.getElementById('r-wins').value.trim();
+  const gaps = document.getElementById('r-gaps').value.trim();
+  const next = document.getElementById('r-next').value.trim();
+  if(!wins && !gaps && !next) return;
+  state.retroHistory.push({date:new Date().toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}), wins, gaps, next});
+  saveState();
+  document.getElementById('r-wins').value=''; document.getElementById('r-gaps').value=''; document.getElementById('r-next').value='';
+  renderRetro();
+}
+function renderRetro(){
+  const box = document.getElementById('retro-hist');
+  if(state.retroHistory.length){
+    box.style.display='';
+    document.getElementById('retro-hist-content').innerHTML = state.retroHistory.slice().reverse().map(r=>`
+      <div class="retro-entry">
+        <div class="re-date">${r.date}</div>
+        <div style="font-size:12px;line-height:1.6"><strong>Wins:</strong> ${r.wins||'—'}<br><strong>Held back:</strong> ${r.gaps||'—'}<br><strong>Next:</strong> ${r.next||'—'}</div>
+      </div>`).join('');
+  } else {
+    box.style.display='none';
+  }
+}
+
+// ═══════════════════════════ SETTINGS ═══════════════════════════
+function openSettings(){
+  const sel = document.getElementById('settings-model-select');
+  sel.innerHTML = MODEL_OPTIONS.map(m=>`<option value="${m.id}">${m.label}</option>`).join('');
+  sel.value = state.apiModel;
+  document.getElementById('settings-key-input').value = state.apiKey || '';
+  document.getElementById('settings-status').textContent = '';
+  document.getElementById('settings-overlay').classList.add('open');
+}
+function closeSettings(){ document.getElementById('settings-overlay').classList.remove('open'); }
+function saveSettings(){
+  state.apiKey = document.getElementById('settings-key-input').value.trim();
+  state.apiModel = document.getElementById('settings-model-select').value;
+  saveState();
+  const status = document.getElementById('settings-status');
+  status.style.color='var(--green)'; status.textContent='Saved.';
+  setTimeout(closeSettings, 600);
+}
+async function testApiKey(){
+  const status = document.getElementById('settings-status');
+  status.style.color='var(--gray)'; status.textContent='Testing…';
+  try{
+    await callGemini({system:'Reply with only the word OK.', messages:[{role:'user',content:'ping'}]});
+    status.style.color='var(--green)'; status.textContent='✓ Connection working.';
+  }catch(e){
+    status.style.color='var(--red)'; status.textContent='Could not reach the mentor service — '+(e.message||'try again');
+  }
+}
+function noKeyMessage(){
+  return "I need a working connection to the mentor service to reply — try again in a moment, or check your network.";
+}
+
+// ═══════════════════════════ MAIN CHAT ═══════════════════════════
+function appendMsg(role, text){
+  const el = document.getElementById('chat-msgs');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `<div class="msg-av">${role==='user'?'DR':'🤖'}</div><div class="msg-bub">${mdToHtml(text)}</div>`;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+function showTyping(){
+  const el = document.getElementById('chat-msgs');
+  const div = document.createElement('div');
+  div.className='msg assistant'; div.id='typing-row';
+  div.innerHTML = `<div class="msg-av">🤖</div><div class="typing-ind"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div>`;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+function removeTyping(){ const t=document.getElementById('typing-row'); if(t) t.remove(); }
+function renderChat(){
+  const el = document.getElementById('chat-msgs');
+  el.innerHTML='';
+  if(!state.chatHistory.length){
+    el.innerHTML = `<div class="msg assistant"><div class="msg-av">🤖</div><div class="msg-bub">Hi Divya — I'm your growth mentor. Ask me anything about your plan, an interview question, or how to frame your Ford work.</div></div>`;
+  } else {
+    state.chatHistory.forEach(m=>appendMsg(m.role==='user'?'user':'assistant', m.content));
+  }
+  document.getElementById('chat-qps').innerHTML = QUICK_PROMPTS.map((p,i)=>`<button class="qp" onclick="sendQuickPrompt(${i})">${p}</button>`).join('');
+}
 
 // ═══════════════════════════ PWA ═══════════════════════════
 if ('serviceWorker' in navigator) {
