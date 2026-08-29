@@ -535,9 +535,9 @@ header{background:var(--blue);color:#fff;padding:0 16px;display:flex;align-items
 <div class="settings-overlay" id="settings-overlay">
   <div class="settings-modal">
     <div class="settings-title">⚙️ Mentor Settings</div>
-    <div class="settings-sub">All 48 Data PM & AI Path articles, every certification, and the full plan work with zero cost and zero setup — they're built in. This key is only needed for the <strong>live chat</strong> features (Mentor chat, follow-up questions under a topic, Metrics Lab & Arena feedback) — because this app runs outside Claude.ai, so those specific features need your own Anthropic key to talk to Claude.</div>
+    <div class="settings-sub">All 48 Data PM & AI Path articles, every certification, and the full plan work with zero cost and zero setup — they're built in. This key is only needed for the <strong>live chat</strong> features (Mentor chat, follow-up questions under a topic, Metrics Lab & Arena feedback) — because this app runs outside Gemini.ai, so those specific features need your own Google Gemini key to talk to Gemini.</div>
 
-    <span class="settings-label">Your Anthropic API Key</span>
+    <span class="settings-label">Your Google Gemini API Key</span>
     <input class="settings-input" id="settings-key-input" type="password" placeholder="sk-ant-...">
 
     <span class="settings-label">Model</span>
@@ -1023,7 +1023,7 @@ The PM decision framework: prompt engineering is fastest and cheapest but least 
 
 This is your existing superpower, and the highest-leverage move available to you is formalising your $336K+/yr savings story into this exact framework — precisely naming which 2-3 of these levers actually drove your number, rather than leaving it as one impressive but vague headline figure.
 
-**Try this:** write one sentence per lever — token optimisation, caching, model tiering, batch processing — stating whether it was part of your Ford savings and roughly how much each contributed. Even rough estimates make the story dramatically more credible than a single aggregate number.`,links:[{name:'Prompt Caching — Anthropic docs',url:'https://docs.claude.com/en/docs/build-with-claude/prompt-caching'},{name:'LLM Cost Optimization strategies — Google Cloud',url:'https://cloud.google.com/blog/products/ai-machine-learning/llm-cost-optimization-strategies'}]},
+**Try this:** write one sentence per lever — token optimisation, caching, model tiering, batch processing — stating whether it was part of your Ford savings and roughly how much each contributed. Even rough estimates make the story dramatically more credible than a single aggregate number.`,links:[{name:'Prompt Caching — Google Gemini docs',url:'https://docs.claude.com/en/docs/build-with-claude/prompt-caching'},{name:'LLM Cost Optimization strategies — Google Cloud',url:'https://cloud.google.com/blog/products/ai-machine-learning/llm-cost-optimization-strategies'}]},
       {id:"c30",title:"Model Monitoring & Drift",desc:"Data drift, concept drift, performance degradation. PM responsibility: alerting thresholds and retraining triggers.",why:"The operational PM responsibility that most AI PMs overlook",article:`**Model Monitoring & Drift** is the ongoing practice of watching a deployed model's real-world performance for two kinds of degradation: **data drift** (the incoming data's statistical properties shift from what the model was trained on — e.g. customer behaviour genuinely changes over time) and **concept drift** (the actual relationship between inputs and the correct output changes — what used to predict churn no longer does).
 
 The PM's job isn't building the monitoring dashboards — it's defining the **alerting thresholds** and, critically, the **retraining triggers**: at what point does drift become bad enough that someone needs to act, and what's the actual process when that trigger fires? A model with no defined retraining trigger just quietly gets worse indefinitely, and often nobody notices until a business metric visibly suffers.
@@ -1192,17 +1192,17 @@ A few techniques worth knowing precisely, because they come up often in AI PM co
 
 As a PM, you're not necessarily writing production prompts yourself, but understanding these techniques means you can meaningfully evaluate whether a quality problem is a genuine model limitation, or simply a prompting gap that's cheaper and faster to fix.
 
-**Try this:** next time an AI feature gives an inconsistent or lower-quality response, ask whether few-shot examples were used in the prompt — this single technique fixes a surprising share of "the model isn't good enough" complaints.`,links:[{name:'Prompt Engineering Guide — Anthropic docs',url:'https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview'},{name:'Prompt Engineering — OpenAI Cookbook',url:'https://cookbook.openai.com/articles/related_resources'}]},
+**Try this:** next time an AI feature gives an inconsistent or lower-quality response, ask whether few-shot examples were used in the prompt — this single technique fixes a surprising share of "the model isn't good enough" complaints.`,links:[{name:'Prompt Engineering Guide — Google Gemini docs',url:'https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview'},{name:'Prompt Engineering — OpenAI Cookbook',url:'https://cookbook.openai.com/articles/related_resources'}]},
       {id:"c49",title:"Context Engineering",desc:"See full article for details.",why:"New topic aligned to your data management maturity slide.",article:`**Context Engineering** is the broader discipline that prompt engineering sits inside: deliberately designing *everything* that fills a model's context window for a given request — not just the instruction text, but retrieved documents (RAG), conversation history, tool/function outputs, system instructions, and examples — so the model has exactly the right information, in the right order, without exceeding its context limit or drowning the truly relevant content in noise.
 
 The distinction that matters: prompt engineering asks "how do I word this instruction well?" Context engineering asks the bigger question — "of everything that *could* go into this request, what actually should, in what order, and how do I keep it within budget as the conversation or task grows?" As AI products increasingly chain together multiple steps, tools, and retrieved sources — not just a single prompt-response — this has become the more consequential skill of the two, and is a genuinely current, 2025-26-era term worth having sharp command of.
 
 This connects directly to your AI cost governance work too: since cost scales with tokens, and context is often the largest token consumer in a request, context engineering decisions are frequently cost decisions in disguise.
 
-**Try this:** for an AI feature you know, ask what actually goes into its context window on a typical request — system prompt, retrieved documents, chat history, tool outputs — and whether all of it is genuinely earning its place, cost- and quality-wise.`,links:[{name:'Context Engineering — Anthropic engineering blog',url:'https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents'},{name:'The New Skill in AI: Context Engineering — LangChain blog',url:'https://blog.langchain.dev/the-rise-of-context-engineering/'}]},
+**Try this:** for an AI feature you know, ask what actually goes into its context window on a typical request — system prompt, retrieved documents, chat history, tool outputs — and whether all of it is genuinely earning its place, cost- and quality-wise.`,links:[{name:'Context Engineering — Google Gemini engineering blog',url:'https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents'},{name:'The New Skill in AI: Context Engineering — LangChain blog',url:'https://blog.langchain.dev/the-rise-of-context-engineering/'}]},
     ],
     resources:[
-      {type:"free",name:"Anthropic — Context Engineering (engineering blog)",desc:"The clearest current writeup on context engineering as a distinct discipline."},
+      {type:"free",name:"Google Gemini — Context Engineering (engineering blog)",desc:"The clearest current writeup on context engineering as a distinct discipline."},
       {type:"free",name:"Google Cloud — Responsible AI practices",desc:"Practical grounding for data bias mitigation and synthetic data trade-offs."},
     ]
   },
@@ -1216,19 +1216,19 @@ const AI_TRACKS = [
 
 The product-relevant insight: a bigger, more expensive model isn't automatically the right choice. GPT-4-class models cost roughly 10x more per token than smaller models specifically because they handle harder reasoning — but for straightforward tasks (classification, simple extraction, formatting), a smaller model often performs just as well at a fraction of the cost. This exact trade-off is the foundation of your AI cost governance work.
 
-**Try this:** name one AI-powered feature you interact with daily and guess whether it's likely running on a large or small model, based on how complex its actual task is versus how fast/cheap it needs to respond.`,links:[{name:'Anthropic — Models overview',url:'https://docs.claude.com/en/docs/about-claude/models/overview'},{name:'Tokens explained — OpenAI',url:'https://platform.openai.com/tokenizer'}]},
+**Try this:** name one AI-powered feature you interact with daily and guess whether it's likely running on a large or small model, based on how complex its actual task is versus how fast/cheap it needs to respond.`,links:[{name:'Google Gemini — Models overview',url:'https://docs.claude.com/en/docs/about-claude/models/overview'},{name:'Tokens explained — OpenAI',url:'https://platform.openai.com/tokenizer'}]},
       {id:"ai2",title:"AI Product Taxonomy",desc:"Generative AI vs Predictive AI vs Search vs Recommendation — as product categories. How to position your Ford AI cost governance work in this taxonomy for interviews.",tags:["Product Strategy","AI Categories","Positioning"],article:`AI products broadly fall into four categories, and knowing which one you're building shapes everything downstream: **Generative AI** (creates new content — text, images, code — genuinely novel outputs, not just classification), **Predictive AI** (forecasts an outcome from historical patterns — churn risk, demand forecasting), **Search/Retrieval** (finds and ranks existing information — increasingly AI-enhanced with semantic understanding, not just keyword matching), and **Recommendation** (surfaces personalised suggestions — often the oldest and most mature category of the four).
 
 Why this matters for positioning: your Ford AI cost governance work almost certainly touches Generative AI specifically (LLM-based features), which is the newest, least-mature, most expensive-per-request category — and also the one with the least established best-practice playbook. That's actually valuable positioning, not a gap: you've been doing cost governance in the hardest, least-charted category.
 
 **Try this:** categorise every AI feature you're aware of at Ford into these four buckets. Notice which category has the least mature tooling and processes around it — that's usually where the most interesting, differentiated PM work is happening.`,links:[{name:'Types of AI in products — Google Cloud AI overview',url:'https://cloud.google.com/learn/what-is-artificial-intelligence'},{name:'Generative vs Predictive AI — IBM',url:'https://www.ibm.com/think/topics/generative-ai-vs-predictive-ai'}]},
-      {id:"ai3",title:"Build Something Small (No-Code is Fine)",desc:"Use the Anthropic or OpenAI API to build one small useful script. Not to become an engineer — to develop real intuition about latency, errors, and prompt sensitivity that you can reference in interviews.",tags:["Hands-on","API","Product Intuition"],article:`The fastest way to build real product intuition for AI isn't reading more — it's using an API directly, even for five minutes. Anthropic's and OpenAI's consoles both let you send a prompt and see the raw response, cost, and latency without writing any code at all.
+      {id:"ai3",title:"Build Something Small (No-Code is Fine)",desc:"Use the Google Gemini or OpenAI API to build one small useful script. Not to become an engineer — to develop real intuition about latency, errors, and prompt sensitivity that you can reference in interviews.",tags:["Hands-on","API","Product Intuition"],article:`The fastest way to build real product intuition for AI isn't reading more — it's using an API directly, even for five minutes. Google Gemini's and OpenAI's consoles both let you send a prompt and see the raw response, cost, and latency without writing any code at all.
 
 What this builds that reading can't: a felt sense of how sensitive outputs are to small prompt changes, how response time actually feels for different task complexities, and how token costs accumulate in practice — none of which show up clearly in a slide deck or article, only in direct hands-on use.
 
 This is a deliberately low-effort, high-payoff exercise — you're not becoming an engineer, you're building the same kind of product intuition a hardware PM gets from actually holding the device, not just reading the spec sheet.
 
-**Try this:** open console.anthropic.com or platform.openai.com, send the exact same request with two different models (a small/cheap one and a large/expensive one), and compare the response quality against the price and speed difference. That single comparison teaches more than an hour of reading.`,links:[{name:'Anthropic Console — try the API directly',url:'https://console.anthropic.com/'},{name:'OpenAI Playground',url:'https://platform.openai.com/playground'}]},
+**Try this:** open console.anthropic.com or platform.openai.com, send the exact same request with two different models (a small/cheap one and a large/expensive one), and compare the response quality against the price and speed difference. That single comparison teaches more than an hour of reading.`,links:[{name:'Google Gemini Console — try the API directly',url:'https://console.anthropic.com/'},{name:'OpenAI Playground',url:'https://platform.openai.com/playground'}]},
     ],
     checkpoint:"After Week 2: You can explain to a non-technical VP why switching from GPT-4 to a smaller model saved $300K, what the quality trade-off risk was, and how you measured it. That is your Ford story sharpened."
   },
@@ -1267,7 +1267,7 @@ This is exactly the PM layer that sits above whatever your data science team alr
 
 This is exactly where your existing $336K+/yr savings work lives — the highest-value thing you can do is map your actual savings onto these four specific levers rather than leaving it as one impressive but vague aggregate number, which is far more convincing to a technical interviewer.
 
-**Try this:** write one sentence per lever, stating whether it was part of your actual savings work and a rough estimate of its individual contribution.`,links:[{name:'Prompt Caching — Anthropic docs',url:'https://docs.claude.com/en/docs/build-with-claude/prompt-caching'},{name:'Batch Processing for cost savings — Anthropic docs',url:'https://docs.claude.com/en/docs/build-with-claude/batch-processing'}]},
+**Try this:** write one sentence per lever, stating whether it was part of your actual savings work and a rough estimate of its individual contribution.`,links:[{name:'Prompt Caching — Google Gemini docs',url:'https://docs.claude.com/en/docs/build-with-claude/prompt-caching'},{name:'Batch Processing for cost savings — Google Gemini docs',url:'https://docs.claude.com/en/docs/build-with-claude/batch-processing'}]},
       {id:"ai9",title:"Responsible AI — PM Responsibilities",desc:"Bias detection, fairness metrics, explainability requirements, model cards. What a senior PM owns here — the policy and monitoring framework, not the technical implementation.",tags:["Responsible AI","Bias","Fairness","Model Cards"],article:`**Responsible AI** as a PM responsibility isn't the technical implementation (that's ML engineering) — it's the policy and monitoring framework layered on top: **bias detection** (does the model perform differently across demographic or customer segments in ways that matter), **fairness metrics** (defining what "fair" means for your specific use case, since there are multiple mathematically valid but conflicting definitions), **explainability requirements** (can you tell a customer or regulator *why* the model made a specific decision, when that's legally or ethically required), and **model cards** (standardised documentation of a model's intended use, known limitations, and evaluation results — increasingly expected practice, not optional).
 
 The PM judgment call: how much explainability and fairness auditing a given feature actually needs is proportional to its stakes — a content recommendation needs far less scrutiny than a decision affecting someone's credit, employment, or legal standing. Knowing where on that spectrum your feature sits is itself the core skill.
@@ -1555,19 +1555,29 @@ function updateStreak(){
 }
 
 // ═══════════════════════════ CLAUDE API — AUTHENTICATED CALLS ═══════════════════════════
-// This app runs as a standalone PWA outside Claude.ai, so every call to Anthropic's API
+// This app runs as a standalone PWA outside Gemini.ai, so every call to Google Gemini's API
 // must carry Divya's own key. The key lives ONLY in this browser's localStorage — it is
-// never written into any file, never sent anywhere except directly to Anthropic.
+// never written into any file, never sent anywhere except directly to Google Gemini.
 const MODEL_OPTIONS=[
-  {id:'claude-sonnet-5',label:'Claude Sonnet 5 — best quality (recommended)'},
-  {id:'claude-haiku-4-5-20251001',label:'Claude Haiku 4.5 — fastest & cheapest'},
+  {id:'claude-sonnet-5',label:'Gemini 2.5 Flash — best quality (recommended)'},
+  {id:'claude-haiku-4-5-20251001',label:'Gemini Haiku 4.5 — fastest & cheapest'},
 ];
 
 class NoApiKeyError extends Error{}
 
-async function callClaude({system,messages,maxTokens}){
+async function callGemini({ system, messages }) {
+  const prompt=[system,...messages.map(m=>`${m.role}: ${m.content}`)].join("\n\n");
+  const response=await fetch("https://growth-mentor-api.vijayendraj-cloudops.workers.dev",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
+  });
+  if(!response.ok) throw new Error(`Gemini error: ${response.status}`);
+  const data=await response.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || "No response received.";
+}){
   if(!state.apiKey){ throw new NoApiKeyError('No API key set'); }
-  const res=await fetch('https://api.anthropic.com/v1/messages',{
+  const res=await fetch('https://growth-mentor-api.vijayendraj-cloudops.workers.dev',{
     method:'POST',
     headers:{
       'content-type':'application/json',
@@ -1592,7 +1602,7 @@ async function callClaude({system,messages,maxTokens}){
 }
 
 function noKeyMessage(){
-  return `To enable your AI mentor, add your Anthropic API key in **Settings ⚙️** (top right) — it takes about 2 minutes and costs pennies for personal use. Get a key at console.anthropic.com/settings/keys, paste it in, and this will work everywhere in the app.`;
+  return `To enable your AI mentor, add your Google Gemini API key in **Settings ⚙️** (top right) — it takes about 2 minutes and costs pennies for personal use. Get a key at console.anthropic.com/settings/keys, paste it in, and this will work everywhere in the app.`;
 }
 
 // ═══════════════════════════ SETTINGS MODAL ═══════════════════════════
@@ -1621,14 +1631,14 @@ async function testApiKey(){
   if(!key){ status.textContent='Enter a key first.'; status.style.color='var(--red)'; return; }
   status.textContent='Testing...'; status.style.color='var(--gray)';
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const res=await fetch('https://growth-mentor-api.vijayendraj-cloudops.workers.dev',{
       method:'POST',
       headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model,max_tokens:10,messages:[{role:'user',content:'Reply with OK'}]})
     });
     if(res.ok){ status.textContent='✅ Key works! Click Save.'; status.style.color='var(--green)'; }
     else{ const b=await res.json().catch(()=>({})); status.textContent='❌ '+(b?.error?.message||'Key rejected — check it and try again.'); status.style.color='var(--red)'; }
-  }catch(e){ status.textContent='❌ Could not reach Anthropic — check your connection.'; status.style.color='var(--red)'; }
+  }catch(e){ status.textContent='❌ Could not reach Google Gemini — check your connection.'; status.style.color='var(--red)'; }
 }
 
 // ═══════════════════════════ NAV BUILD ═══════════════════════════
@@ -2030,7 +2040,7 @@ async function submitMetrics(id){
   const ex=METRICS_EX.find(e=>e.id===id);
   const prompt=`Exercise: ${ex.title}\nScenario: ${ex.scenario}\nQuestion: ${ex.question}\nDivya's answer: ${answer}`;
   try{
-    const reply=await callClaude({system:METRICS_SYSTEM,messages:[{role:'user',content:prompt}],maxTokens:1000});
+    const reply=await callGemini({system:METRICS_SYSTEM,messages:[{role:'user',content:prompt}],maxTokens:1000});
     fb.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:8px">Mentor Feedback</div>'+formatMsg(reply);
     state.exercisesDone=state.exercisesDone||{}; state.exercisesDone[id]=true; saveState();
     btn.textContent='Resubmit'; btn.disabled=false;
@@ -2104,7 +2114,7 @@ async function submitArena(){
   fb.innerHTML='<div style="color:var(--gray)">Reviewing your answer...</div>';
   const prompt=`Type: ${ARENA_NAMES[arenaType]}\nQuestion: ${arenaPrompt.q}\nAnswer: ${answer}`;
   try{
-    const reply=await callClaude({system:ARENA_SYSTEM,messages:[{role:'user',content:prompt}],maxTokens:1000});
+    const reply=await callGemini({system:ARENA_SYSTEM,messages:[{role:'user',content:prompt}],maxTokens:1000});
     fb.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:8px">Mentor Feedback</div>'+formatMsg(reply);
     btn.disabled=false; btn.textContent='Resubmit ↑';
   }catch(e){
@@ -2305,7 +2315,7 @@ Her background: Technical PM, 12 years at Ford Motor Company, owns the multi-ten
 Answer her question directly and specifically, grounded in what she just read. If she asks you to quiz her, ask ONE focused question and wait for her answer — don't dump multiple questions at once. If she asks how it applies to her Ford work, be concrete, not generic. Keep answers focused — 100-250 words unless she's asked for an exercise or deeper explanation. No preamble, no "great question" openers — just answer.`;
 
   try{
-    const reply=await callClaude({system:topicSystem,messages:topicChatHistory.slice(-10),maxTokens:800});
+    const reply=await callGemini({system:topicSystem,messages:topicChatHistory.slice(-10),maxTokens:800});
     removeTopicTyping();
     topicChatHistory.push({role:'assistant',content:reply});
     appendTopicMsg('assistant',reply);
@@ -2370,7 +2380,7 @@ async function sendChat(){
   state.chatHistory.push({role:'user',content:text});
   showTyping();
   try{
-    const reply=await callClaude({system:SYSTEM_PROMPT,messages:state.chatHistory.slice(-12),maxTokens:1000});
+    const reply=await callGemini({system:SYSTEM_PROMPT,messages:state.chatHistory.slice(-12)});
     removeTyping();
     state.chatHistory.push({role:'assistant',content:reply});
     if(state.chatHistory.length>30) state.chatHistory=state.chatHistory.slice(-30);
