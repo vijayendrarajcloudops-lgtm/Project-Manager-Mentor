@@ -1,56 +1,60 @@
-const CACHE_NAME = 'divya-mentor-v3';
+const CACHE_NAME = 'divya-mentor-v4';
+const BASE_PATH = '/Project-Manager-Mentor';
+
 const OFFLINE_ASSETS = [
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/icon-180.png',
-  '/icon-32.png',
+  `${BASE_PATH}/`,
+  `${BASE_PATH}/index.html`,
+  `${BASE_PATH}/manifest.json`,
+  `${BASE_PATH}/icon-192.png`,
+  `${BASE_PATH}/icon-512.png`,
+  `${BASE_PATH}/icon-180.png`,
+  `${BASE_PATH}/icon-32.png`,
 ];
 
-// ── INSTALL: cache all core assets ──
+// INSTALL
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      console.log('[SW] Caching app shell');
-      return cache.addAll(OFFLINE_ASSETS);
-    }).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(OFFLINE_ASSETS))
+      .then(() => self.skipWaiting())
   );
 });
 
-// ── ACTIVATE: clean old caches ──
+// ACTIVATE
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => {
-          console.log('[SW] Deleting old cache:', k);
-          return caches.delete(k);
-        })
-      )
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then(keys => Promise.all(
+        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+      ))
+      .then(() => self.clients.claim())
   );
 });
 
-// ── FETCH: cache-first for assets, network-first for API ──
+// FETCH
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Always go network for Anthropic API calls
+  // Anthropic API - network first
   if (url.hostname === 'api.anthropic.com') {
     event.respondWith(
       fetch(event.request).catch(() =>
         new Response(JSON.stringify({
           error: 'offline',
-          content: [{ text: "You're offline right now. Your progress is saved locally. Come back online to chat with your mentor." }]
-        }), { headers: { 'Content-Type': 'application/json' } })
+          content: [{ text: "You're offline right now. Your progress is saved locally." }]
+        }), {
+          headers: { 'Content-Type': 'application/json' }
+        })
       )
     );
     return;
   }
 
-  // For Google Fonts and CDN resources: network first, cache fallback
-  if (url.hostname.includes('fonts.googleapis.com') || url.hostname.includes('fonts.gstatic.com')) {
+  // Google Fonts - network first
+  if (
+    url.hostname.includes('fonts.googleapis.com') ||
+    url.hostname.includes('fonts.gstatic.com')
+  ) {
     event.respondWith(
       fetch(event.request)
         .then(res => {
@@ -63,12 +67,13 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // For app shell: cache first
+  // App assets - cache first
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
+
       return fetch(event.request).then(res => {
-        if (res && res.status === 200) {
+        if (res.ok) {
           const clone = res.clone();
           caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
         }
@@ -78,9 +83,9 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// ── BACKGROUND SYNC: notify when back online ──
+// Skip waiting
 self.addEventListener('message', event => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
+  if (event.data?.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
 });
