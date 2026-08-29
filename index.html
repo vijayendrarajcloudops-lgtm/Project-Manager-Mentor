@@ -2384,19 +2384,14 @@ function handleChatKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault();
 function autoResize(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
 
 // ═══════════════════════════ PWA ═══════════════════════════
-if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{
-    const sw=`const CACHE='divya-v10';const ASSETS=['/index.html','/manifest.json','/icon-192.png','/icon-512.png'];
-self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()))});
-self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(n=>n!==CACHE).map(n=>caches.delete(n)))).then(()=>self.clients.claim()))});
-self.addEventListener('fetch',e=>{if(e.request.url.includes('api.anthropic.com')){e.respondWith(fetch(e.request));return;}
-e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{if(res&&res.status===200){const c=res.clone();caches.open(CACHE).then(cache=>cache.put(e.request,c));}return res;})));});`;
-    const blob=new Blob([sw],{type:'application/javascript'});
-    navigator.serviceWorker.register(URL.createObjectURL(blob))
-      .then(()=>console.log('[PWA] SW registered'))
-      .catch(e=>console.log('[PWA] SW skipped:',e.message));
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log('[PWA] SW registered'))
+      .catch(e => console.log('[PWA] SW failed:', e));
   });
 }
+
 window.addEventListener('offline',()=>document.getElementById('offline-badge').style.display='block');
 window.addEventListener('online',()=>document.getElementById('offline-badge').style.display='none');
 
