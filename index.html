@@ -1558,9 +1558,8 @@ function updateStreak(){
 // This app runs as a standalone PWA outside Gemini.ai, so every call to Google Gemini's API
 // must carry Divya's own key. The key lives ONLY in this browser's localStorage — it is
 // never written into any file, never sent anywhere except directly to Google Gemini.
-const MODEL_OPTIONS=[
-  {id:'claude-sonnet-5',label:'Gemini 2.5 Flash — best quality (recommended)'},
-  {id:'claude-haiku-4-5-20251001',label:'Gemini Haiku 4.5 — fastest & cheapest'},
+const MODELS = [
+  { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash — recommended' }
 ];
 
 class NoApiKeyError extends Error{}
