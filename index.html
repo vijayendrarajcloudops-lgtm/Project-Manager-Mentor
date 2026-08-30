@@ -1571,7 +1571,12 @@ async function callGemini({ system, messages }) {
     headers:{"Content-Type":"application/json"},
     body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
   });
-  if(!response.ok) throw new Error(`Gemini error: ${response.status}`);
+  if(!response.ok){
+    let detail = '';
+    try{ const errJson = await response.json(); detail = errJson.error?.message || errJson.error || JSON.stringify(errJson); }
+    catch(e){ try{ detail = await response.text(); }catch(e2){} }
+    throw new Error(`Gemini error ${response.status}${detail ? ' — ' + detail : ''}`);
+  }
   const data=await response.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text || "No response received.";
 }
